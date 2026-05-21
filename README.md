@@ -60,37 +60,62 @@ Open **http://localhost:3000** for the dashboard. Backend API is at **http://loc
 
 ## Tour
 
-What each page in the dashboard looks like, in order. All screenshots are from the demo seed (`FENNEC_DEMO_SEED=1 docker compose up`) — flip it on yourself to poke around without running a real scan.
+A walk through every page in the dashboard, in the order you'd use them. All screenshots come from the demo seed (`FENNEC_DEMO_SEED=1 docker compose up`) — flip it on yourself to explore without running a real scan.
 
-### Target Inventory
-<p align="center"><img src="docs/screenshots/dashboard-targets.png" alt="Target Inventory" width="100%"></p>
+### Target Inventory — the SaaS surface you've authorised
+<p align="center"><img src="docs/screenshots/dashboard-targets.png" alt="Target Inventory — 12 cards" width="100%"></p>
 
-Every domain you've authorised. Each card shows the most recent scan time and an at-a-glance findings count. Add a new target, edit it, or attach login credentials (per target — passwords stay local, only injected into the agent's runtime container when a scan starts).
+Twelve targets in the demo: production, staging, the API gateway, customer app, admin console, billing service, docs / blog / status / CDN subdomains, an internal demo app, and a legacy 2021 dashboard. Each card shows the last-scan recency and an at-a-glance findings count. **Add Target** registers a new domain, the pencil icon edits, the trash icon removes. Per-target credentials (the QA test user, in our case) stay local — only injected into the agent's runtime container when a scan starts.
 
-### Assessments (Status)
-<p align="center"><img src="docs/screenshots/dashboard-status.png" alt="Assessments — Status" width="100%"></p>
+### Assessments — what's running, what ran, what's next
+<p align="center"><img src="docs/screenshots/dashboard-status.png" alt="Assessments" width="100%"></p>
 
-Live workflow stages at the top (Assessment Started → Authentication → Reconnaissance → Testing → Validation) light up as the current scan progresses. Below: any active scans, scheduled jobs, and a chronological history with status dot, method (Turbo/Balanced/Deep), credential, and timing.
+Live workflow stages at the top light up as the current scan progresses (Assessment Started → Authentication → Reconnaissance → **Testing (Active)** → Validation). Below: any **Active Assessments** (the row with the spinning Cancel button is a Deep pass on production), scheduled jobs, and a chronological **Historical Assessments** table — green dot = succeeded with findings, red dot = failed, with method, credential, start, and end timestamps.
 
-### Assessment detail
-<p align="center"><img src="docs/screenshots/dashboard-assessment.png" alt="Assessment detail" width="100%"></p>
+### Assessment detail — Live Activity
+<p align="center"><img src="docs/screenshots/dashboard-assessment.png" alt="Assessment detail — Live Activity" width="100%"></p>
 
-Drill into a single scan: each pipeline stage with its completion state, plus four tabs — **Live Activity** streams every tool call as the agents run them (curl, nmap, gobuster, sqlmap, web_search...), **Recon Data** shows the structured attack-surface map, **Hypotheses** lists the analyst's testable claims with their verdicts, and **Findings** is the per-scan finding list.
+Drill into a single scan. The pipeline timeline shows every stage with its completion state, and the four tabs let you see what the agents actually did. **Live Activity** is the per-tool-call stream: `nmap -sV`, `gobuster dir`, `sqlmap` against the login form, `curl` exfiltration probes, `web_search` for related CVEs — every command, every timestamp, who ran it.
 
-### Findings
-<p align="center"><img src="docs/screenshots/dashboard-findings.png" alt="Findings list" width="100%"></p>
+### Assessment detail — Hypotheses
+<p align="center"><img src="docs/screenshots/dashboard-hypotheses.png" alt="Assessment detail — Hypotheses" width="100%"></p>
 
-Every confirmed vulnerability across all scans, sorted by severity. The sidebar is the queue; clicking a row opens four tabs of detail (**Description**, **Impact**, **Evidence**, **Remediation**), plus a Details panel with the CVSS-style score, OWASP category, discovery date, and OPEN/RESOLVED/ARCHIVED state. The Actions panel hosts the AI-assisted remediation patcher, the AI Summary helper, and a feedback control to flag false positives — every flag becomes a training signal for the local model.
+The analyst agent's full claim tree for this scan. Each row is a testable hypothesis (UNION-based SQL injection on `/api/auth/login`, IDOR on `/api/users/{id}`, stored XSS in the support form, ...) with status, severity badge, priority score, and OWASP category. Confirmed-vulnerable, dead-end, and safe verdicts are all kept — the agent shows its work whether or not the hypothesis paid out.
+
+### Assessment detail — Recon Data
+<p align="center"><img src="docs/screenshots/dashboard-recon.png" alt="Assessment detail — Recon Data" width="100%"></p>
+
+The structured attack-surface map the recon agent built before any exploit ran: detected technologies (Nginx 1.25, FastAPI 0.115, PostgreSQL 15.4, React 18.2, Cloudflare, OpenSSH 9.6), every discovered endpoint with parameter list and auth requirement, identified entry points, observed cookies/headers, and free-text notes the agent surfaced ("CSP is report-only", "JWT uses HS256 — verify rotation"). This is what the analyst chews on to form the hypothesis tree above.
+
+### Findings — Description tab (the marquee shot)
+<p align="center"><img src="docs/screenshots/dashboard-findings.png" alt="Findings — Description tab" width="100%"></p>
+
+Every confirmed vulnerability across all scans, severity-sorted in the sidebar. The selected critical-severity finding here is **UNION-based SQL injection on `/api/auth/login`** that the agent confirmed via three injection types (error-based, time-based blind, UNION) and used to exfiltrate the first five rows of the `users` table — including bcrypt hashes — via an unintentional `_debug_result` field the application leaked. The Description tab shows the technical breakdown of how the agent found and confirmed the bug.
+
+### Findings — Impact tab
+<p align="center"><img src="docs/screenshots/dashboard-finding-impact.png" alt="Findings — Impact" width="100%"></p>
+
+**Demonstrated Impact**, **Attack Scenarios**, **Business Risk** — written for the engineering manager AND the CISO. From the agent: full read access to `users`, `sessions`, `api_keys`, and `billing_accounts`; four concrete pivots (offline hash crack → login as user, session-token replay → admin takeover, credential stuffing prep, API-key exfil); GDPR Article 33 notification trigger; estimated remediation cost.
+
+### Findings — Evidence tab
+<p align="center"><img src="docs/screenshots/dashboard-finding-evidence.png" alt="Findings — Evidence" width="100%"></p>
+
+The receipts. Every confirmation step the agent took, then **Payloads Used** — the exact strings it sent, ready to copy into Burp or a `curl`. No black-box "we think there's a problem here" — the payloads either work for you when you paste them or the finding goes in the false-positive bin.
+
+### Findings — Remediation tab
+<p align="center"><img src="docs/screenshots/dashboard-finding-remediation.png" alt="Findings — Remediation" width="100%"></p>
+
+**Primary fix** (parametrise the query, strip the `_debug_result` field), **Implementation pattern** (an actual code diff to apply), and **Additional hardening** (WAF rule for defense-in-depth, DB-user least privilege, CI lint to fail builds on f-string SQL, password rotation policy). This is a hand-off the engineering team can act on without translating from security-speak.
 
 ### Demo seed mode
 
-The screenshots above all come from a built-in synthetic seed. To see the dashboard populated without running a real scan, set the env var when bringing up the stack:
+The screenshots above all come from a built-in synthetic seed. To populate the dashboard yourself without running a real scan, set the env var when bringing up the stack:
 
 ```bash
 FENNEC_DEMO_SEED=1 docker compose up --build
 ```
 
-The seed creates three targets, five scans across the lifecycle (one running, three completed with varied verdicts, one failed), eight hypotheses with their tool calls, and five findings across severity buckets — all tagged `[demo]` in the underlying records. It's idempotent and skips if you already have real scans in the store.
+The seed creates 12 targets, 17 scans across the last 28 days (one currently running, the rest completed across all severities, one historical failed scan), the full hypothesis tree + tool-call log for the production scan, and 28 findings spread across critical / high / medium / low — including the deep SQL-injection finding shown in the screenshots. It's idempotent: it skips entirely if you already have real scans in the store, so it never collides with a production run.
 
 ## Walkthrough — your first scan
 

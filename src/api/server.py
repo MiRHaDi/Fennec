@@ -732,9 +732,42 @@ async def dashboard_stats() -> dict:
 
 @app.get("/dashboard/trends")
 async def dashboard_trends(days: int = 30) -> list[dict]:
-    # OSS doesn't persist enough history for a trend chart. Return an empty
-    # series with the expected shape so the dashboard renders without errors.
-    return []
+    """Daily findings counts grouped by severity over the last ``days``.
+
+    Computed live from the in-memory JOBS store — every finding's
+    ``discovered_at`` is bucketed into a day, then we emit one entry
+    per day in chronological order in the VulnerabilityTrend shape the
+    dashboard chart expects. Days with no findings emit zeroes so the
+    line chart stays continuous instead of going sparse.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    today = datetime.now(timezone.utc).date()
+    buckets: dict[str, dict] = {}
+    for offset in range(days):
+        d = today - timedelta(days=offset)
+        buckets[d.isoformat()] = {
+            "date": d.isoformat(),
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        }
+
+    for job in JOBS.all():
+        for finding in job.findings:
+            discovered = finding.get("discovered_at") or ""
+            try:
+                day = datetime.fromisoformat(discovered).date().isoformat()
+            except ValueError:
+                continue
+            if day not in buckets:
+                continue
+            sev = (finding.get("severity") or "").lower()
+            if sev in buckets[day]:
+                buckets[day][sev] += 1
+
+    return sorted(buckets.values(), key=lambda b: b["date"])
 
 
 @app.get("/dashboard/severity-distribution")
