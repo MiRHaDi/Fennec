@@ -14,6 +14,7 @@
 
 <p align="center">
   <img src="docs/screenshots/dashboard.png" alt="Fennec Dashboard — Security Overview" width="100%">
+  <br><em>Security Overview — the dashboard's landing page. Composite risk score, severity breakdown, target inventory, time-to-fix, and aging findings, all populated from a real scan.</em>
 </p>
 
 ## Why Fennec
@@ -57,11 +58,45 @@ Open **http://localhost:3000** for the dashboard. Backend API is at **http://loc
 
 > If you only want the CLI and not the dashboard, see [CLI mode](#cli-mode) below.
 
+## Tour
+
+What each page in the dashboard looks like, in order. All screenshots are from the demo seed (`FENNEC_DEMO_SEED=1 docker compose up`) — flip it on yourself to poke around without running a real scan.
+
+### Target Inventory
+<p align="center"><img src="docs/screenshots/dashboard-targets.png" alt="Target Inventory" width="100%"></p>
+
+Every domain you've authorised. Each card shows the most recent scan time and an at-a-glance findings count. Add a new target, edit it, or attach login credentials (per target — passwords stay local, only injected into the agent's runtime container when a scan starts).
+
+### Assessments (Status)
+<p align="center"><img src="docs/screenshots/dashboard-status.png" alt="Assessments — Status" width="100%"></p>
+
+Live workflow stages at the top (Assessment Started → Authentication → Reconnaissance → Testing → Validation) light up as the current scan progresses. Below: any active scans, scheduled jobs, and a chronological history with status dot, method (Turbo/Balanced/Deep), credential, and timing.
+
+### Assessment detail
+<p align="center"><img src="docs/screenshots/dashboard-assessment.png" alt="Assessment detail" width="100%"></p>
+
+Drill into a single scan: each pipeline stage with its completion state, plus four tabs — **Live Activity** streams every tool call as the agents run them (curl, nmap, gobuster, sqlmap, web_search...), **Recon Data** shows the structured attack-surface map, **Hypotheses** lists the analyst's testable claims with their verdicts, and **Findings** is the per-scan finding list.
+
+### Findings
+<p align="center"><img src="docs/screenshots/dashboard-findings.png" alt="Findings list" width="100%"></p>
+
+Every confirmed vulnerability across all scans, sorted by severity. The sidebar is the queue; clicking a row opens four tabs of detail (**Description**, **Impact**, **Evidence**, **Remediation**), plus a Details panel with the CVSS-style score, OWASP category, discovery date, and OPEN/RESOLVED/ARCHIVED state. The Actions panel hosts the AI-assisted remediation patcher, the AI Summary helper, and a feedback control to flag false positives — every flag becomes a training signal for the local model.
+
+### Demo seed mode
+
+The screenshots above all come from a built-in synthetic seed. To see the dashboard populated without running a real scan, set the env var when bringing up the stack:
+
+```bash
+FENNEC_DEMO_SEED=1 docker compose up --build
+```
+
+The seed creates three targets, five scans across the lifecycle (one running, three completed with varied verdicts, one failed), eight hypotheses with their tool calls, and five findings across severity buckets — all tagged `[demo]` in the underlying records. It's idempotent and skips if you already have real scans in the store.
+
 ## Walkthrough — your first scan
 
 Once the stack is up:
 
-1. **Open the dashboard** at <http://localhost:3000>. You'll land on the Security Overview (the screenshot above) — empty at first.
+1. **Open the dashboard** at <http://localhost:3000>. You'll land on the Security Overview — empty at first if you skipped `FENNEC_DEMO_SEED`.
 
 2. **Add a target.** Click **Target Inventory** in the sidebar → **Add Target**. Enter a domain you own or have written permission to test (e.g. `http://localhost:9000` if you're testing a local app, or your own staging URL). The target gets a verification token; click **Verify** (in OSS mode this is auto-trust).
 

@@ -60,6 +60,7 @@ from .job_store import (
     TARGETS,
     TargetRecord,
 )
+from .demo_seed import seed_demo
 
 logger = logging.getLogger("fennec.api")
 app = FastAPI(title="Fennec OSS API", version="0.1.0")
@@ -87,6 +88,17 @@ else:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+
+@app.on_event("startup")
+async def _maybe_seed_demo() -> None:
+    """Populate the in-memory store with realistic synthetic data if
+    FENNEC_DEMO_SEED is set. Useful for previewing the dashboard
+    without running a real scan. No-op if anything is already in the
+    JOBS dict, so real scans are never overwritten."""
+    if os.getenv("FENNEC_DEMO_SEED", "").strip().lower() in {"1", "true", "yes", "on"}:
+        seed_demo()
+        logger.info("Demo seed loaded — %d jobs, %d targets", len(JOBS.all()), len(TARGETS))
 
 
 # ---------------------------------------------------------------------------
