@@ -29,3 +29,6 @@ pydantic-settings>=2.7.0
 
 # Utilities
 python-dotenv>=1.0.0
+
+# CLI — rich-rendered interactive dashboard (mirrors the GUI Live Activity panel)
+rich>=13.7.0

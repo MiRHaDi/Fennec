@@ -470,7 +470,15 @@ async def run_pentest(target_url: str, output_dir: Path, verbose: bool = True, s
 # ─── CLI Commands ──────────────────────────────────────────────────────────────
 
 def cmd_scan(args):
-    """Handle the scan command."""
+    """Handle the scan command.
+
+    Two rendering modes, picked off the ``--legacy`` flag:
+
+    - default → the new rich-rendered Live Activity dashboard in
+      ``cli/interactive.py`` (mirrors the web GUI's live view)
+    - --legacy → the older line-buffered ``print()`` UX in ``run_pentest``
+      below, plus the markdown ReportGenerator output
+    """
     from src.config.settings import get_config
 
     # If --test-model, override env to use cheap OpenRouter model
@@ -482,6 +490,22 @@ def cmd_scan(args):
             sys.exit(1)
         get_config.cache_clear()
 
+    # ── New default: rich Live Activity dashboard ───────────────────────
+    if not args.legacy:
+        # Surface the user's chosen method to the graph (same hand-off the
+        # FastAPI server uses for the dashboard).
+        if args.method:
+            os.environ["FENNEC_METHOD"] = args.method
+        from cli.interactive import run_interactive_scan
+        rc = asyncio.run(run_interactive_scan(
+            target=args.target,
+            method=args.method or "balanced",
+            description=args.description,
+            htli=args.htli,
+        ))
+        sys.exit(rc)
+
+    # ── Legacy: line-buffered output + markdown reports ─────────────────
     # Resolve output path
     output_dir = Path(args.output)
     if not output_dir.is_absolute():
@@ -497,37 +521,94 @@ def cmd_scan(args):
     ))
 
 
+def cmd_interactive(args):
+    """Run a fully interactive scan — prompts for every input then renders
+    the live dashboard. Convenience wrapper around ``cmd_scan`` with no
+    target prefilled."""
+    if args.method:
+        os.environ["FENNEC_METHOD"] = args.method
+    from cli.interactive import run_interactive_scan
+    rc = asyncio.run(run_interactive_scan(
+        target=None,
+        method=args.method or "balanced",
+        description=None,
+        htli=args.htli,
+    ))
+    sys.exit(rc)
+
+
 # ─── Main Entry Point ─────────────────────────────────────────────────────────
 
 def main():
-    from cli.art import print_banner
-    print_banner()
+    # The animated banner is the user's "loading" cue. Skip it when stdout
+    # isn't a tty (CI logs) or when the user explicitly asks for quiet.
+    skip_banner = "--quiet" in sys.argv or "-q" in sys.argv or "--no-banner" in sys.argv
+    if not skip_banner:
+        from cli.art import print_banner
+        try:
+            print_banner()
+        except Exception:
+            # Don't let a terminal-encoding glitch break the whole CLI
+            pass
 
     parser = argparse.ArgumentParser(
         description="Fennec AI - Autonomous Penetration Testing Framework",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  fennec                                     # fully interactive (prompts for everything)
   fennec scan --target http://localhost:9000
-  fennec scan --target https://example.com --output ./reports
+  fennec scan --target https://example.com --method deep
+  fennec scan --target http://target --legacy --output ./reports
         """
     )
+    parser.add_argument("--no-banner", action="store_true", help="Suppress the animated banner")
 
     subparsers = parser.add_subparsers(dest="command")
 
-    # scan
+    # ── interactive (default when no args) ──────────────────────────
+    interactive_parser = subparsers.add_parser(
+        "interactive",
+        help="Fully interactive scan — prompts for target/method/objective"
+    )
+    interactive_parser.add_argument(
+        "--method", choices=["turbo", "balanced", "deep"], default=None,
+        help="Skip the method prompt and use this preset"
+    )
+    interactive_parser.add_argument(
+        "--htli", action="store_true",
+        help="Human-In-The-Loop: pause for hypothesis review"
+    )
+
+    # ── scan ────────────────────────────────────────────────────────
     scan_parser = subparsers.add_parser("scan", help="Run a penetration test")
     scan_parser.add_argument(
-        "--target", "-t", required=True,
-        help="Target URL to test (e.g., http://localhost:9000)"
+        "--target", "-t", default=None,
+        help="Target URL to test (e.g., http://localhost:9000). If omitted, prompts."
+    )
+    scan_parser.add_argument(
+        "--description", "-d", default=None,
+        help="Objective for the run (e.g., 'find auth bypass'). If omitted, prompts."
+    )
+    scan_parser.add_argument(
+        "--method", choices=["turbo", "balanced", "deep"], default=None,
+        help="Speed/thoroughness preset (default: balanced)"
+    )
+    scan_parser.add_argument(
+        "--htli", action="store_true",
+        help="Human-In-The-Loop: pause for hypothesis review before each test"
+    )
+    scan_parser.add_argument(
+        "--legacy", action="store_true",
+        help="Use the old line-buffered output + markdown report generator"
     )
     scan_parser.add_argument(
         "--output", "-o", default="../output",
-        help="Output directory for reports (default: ../output)"
+        help="(legacy only) Output directory for markdown reports"
     )
     scan_parser.add_argument(
         "--quiet", "-q", action="store_true",
-        help="Quiet mode - minimal output"
+        help="Quiet mode — minimal output, no banner"
     )
     scan_parser.add_argument(
         "--test-model", action="store_true",
@@ -535,24 +616,30 @@ Examples:
     )
     scan_parser.add_argument(
         "--skip-recon", type=str, default=None,
-        help="Path to a JSON file with pre-built recon data (skips recon phase)"
+        help="(legacy only) Path to a JSON file with pre-built recon data"
     )
 
-    # Backward compatibility: if --target is used without a subcommand
-    # e.g., `python cli.py --target URL`
-    if len(sys.argv) > 1 and sys.argv[1].startswith("--target") or (
-        len(sys.argv) > 1 and sys.argv[1] == "-t"
-    ):
-        # Inject 'scan' as the subcommand
+    # Backward compatibility shim: if the user passed --target without
+    # a subcommand (`python cli.py --target URL`), inject 'scan'.
+    if len(sys.argv) > 1 and (sys.argv[1].startswith("--target") or sys.argv[1] == "-t"):
         sys.argv.insert(1, "scan")
 
     args = parser.parse_args()
 
     if args.command == "scan":
         cmd_scan(args)
+    elif args.command == "interactive":
+        cmd_interactive(args)
     else:
-        parser.print_help()
-        sys.exit(0)
+        # No subcommand → fall straight into the interactive dashboard.
+        # This is the "fennec" command users actually want to type.
+        from cli.interactive import run_interactive_scan
+        try:
+            rc = asyncio.run(run_interactive_scan())
+        except KeyboardInterrupt:
+            print("\naborted")
+            rc = 130
+        sys.exit(rc)
 
 
 if __name__ == "__main__":

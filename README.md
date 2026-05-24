@@ -58,6 +58,73 @@ Open **http://localhost:3000** for the dashboard. Backend API is at **http://loc
 
 > If you only want the CLI and not the dashboard, see [CLI mode](#cli-mode) below.
 
+## CLI — the same agent, in your terminal
+
+If you live in `tmux` and don't want a browser tab open, the CLI runs the **identical** agent pipeline with a live terminal dashboard that mirrors the web UI's Live Activity surface. It subscribes to the same event stream the FastAPI server publishes to the browser — every `node_update`, `tool_call`, `tool_execution`, `hypothesis_tree`, and `finding` event lands in the rich-rendered layout below.
+
+<p align="center"><img src="docs/screenshots/cli-dashboard.png" alt="Fennec CLI — live dashboard during a scan" width="100%"></p>
+
+What you're looking at, panel by panel:
+
+- **Header** — target, currently-active agent (with glyph), elapsed clock, assessment method.
+- **Hypotheses** (top-left) — the analyst's full attack tree, parent → child. `◈` = in progress (highlighted on the one the pentester is currently hammering), `✖` = confirmed-vulnerable (severity-coloured), `✓` = safe, `◇` = pending. Subtitle shows total / queued.
+- **Live Activity** (centre) — timestamped event stream colour-coded by agent (orange = orchestrator, cyan = recon, purple = analyst, red = pentester, green = coder). Tool calls render with the actual command being executed, results render with a preview of the output.
+- **Latest Tool** (right) — the full command + bash-highlighted args of the most recent tool call, with the result body underneath. Long output is head/tail truncated so a runaway `find /` doesn't blow out the panel.
+- **Findings** (bottom-left) — running tally by severity, plus recon-stat counters (discovered paths, fingerprinted services).
+- **Footer** — animated spinner while agents are working; turns into a finished/failed banner when the run ends.
+
+### Run it
+
+Three ways, depending on how interactive you want to be:
+
+```bash
+# 1. Fully interactive — prompts for target, objective, and method
+python cli.py
+
+# 2. One-shot with a target (still drops you into the live dashboard)
+python cli.py scan --target https://your-target.example
+
+# 3. Pick a method without prompting
+python cli.py scan --target https://your-target.example --method deep
+```
+
+`--method` accepts `turbo` / `balanced` / `deep`. Add `--htli` to pause for operator approval before each hypothesis (Human-In-The-Loop mode).
+
+When the run finishes, the live view stops repainting and a static summary block prints below it — a findings-by-severity table, per-vulnerability cards with description + OWASP tag, and the orchestrator's final report. Easy to copy/paste into a ticket or scrollback.
+
+### Programmatic interface
+
+For benchmarking, CI checks, or wrapping Fennec in your own tooling, skip the CLI entirely and call the agent directly:
+
+```python
+import asyncio
+from agent import run_pentest, PentestTask, PentestMode
+
+async def main():
+    task = PentestTask(
+        target_url="http://localhost:8000",
+        description="Find authentication and injection vulnerabilities",
+        mode=PentestMode.BLACK_BOX,
+        tags=["sqli", "auth"],
+    )
+    result = await run_pentest(task)
+    print(f"Success: {result.success}")
+    for v in result.vulnerabilities:
+        print(f"  - {v}")
+
+asyncio.run(main())
+```
+
+`run_pentest` accepts an optional `event_sink=async_callback` — the same hook the API server uses to push SSE events and the CLI uses to drive the live dashboard. You can wire it into any downstream system (Slack, PagerDuty, a tracing backend, ...) without forking the agent.
+
+### Legacy markdown reports
+
+The pre-dashboard CLI is still available behind `--legacy`, in case you want the line-buffered output and the `./reports/<timestamp>_<host>/summary.md` markdown bundle the older release wrote:
+
+```bash
+python cli.py scan --target https://your-target.example --legacy --output ./reports
+```
+
 ## Tour
 
 A walk through every page in the dashboard, in the order you'd use them. All screenshots come from the demo seed (`FENNEC_DEMO_SEED=1 docker compose up`) — flip it on yourself to explore without running a real scan.
@@ -139,38 +206,6 @@ Once the stack is up:
 6. **Review findings.** Open **Findings** in the sidebar to see confirmed vulnerabilities grouped by severity. Click any finding to drill into the evidence: the exact request that triggered it, the response observed, the OWASP category, the suggested fix, and the full reasoning trail.
 
 7. **Export.** Each finding has a JSON export. The agents also dump a Markdown report under `./reports/<timestamp>_<host>/summary.md` for the CLI flow.
-
-## CLI mode
-
-If you don't want the dashboard, the CLI gives you the same agent loop with a single command:
-
-```bash
-pip install -r requirements.txt
-python cli.py scan --target https://your-target.example --output ./reports
-```
-
-Reports land under `./reports/<timestamp>_<host>/` with `summary.md`, per-agent activity logs, and a `findings/` directory of confirmed vulnerabilities.
-
-For benchmarking or programmatic use:
-
-```python
-import asyncio
-from agent import run_pentest, PentestTask, PentestMode
-
-async def main():
-    task = PentestTask(
-        target_url="http://localhost:8000",
-        description="Find authentication and injection vulnerabilities",
-        mode=PentestMode.BLACK_BOX,
-        tags=["sqli", "auth"],
-    )
-    result = await run_pentest(task)
-    print(f"Success: {result.success}")
-    for v in result.vulnerabilities:
-        print(f"  - {v}")
-
-asyncio.run(main())
-```
 
 ## Configuration
 
