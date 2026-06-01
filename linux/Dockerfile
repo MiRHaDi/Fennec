@@ -43,8 +43,8 @@ RUN apt-get update && \
     python3-requests \
     # Go toolchain (for installing Go-based security tools)
     golang \
-    # npm (for JS analysis tools)
-    npm \
+    # Node.js will be installed via NodeSource below
+    gnupg2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure a minimal common wordlist exists even if seclists paths are missing
@@ -68,11 +68,16 @@ RUN go install -v github.com/projectdiscovery/nuclei/v3/cmd/nuclei@latest && \
 # Python-based tools
 RUN pip3 install --break-system-packages --ignore-installed charset-normalizer dirsearch arjun wafw00f
 
+# Install Node.js from NodeSource (Kali's bundled npm has an LRU constructor bug)
+RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs
+
 # npm-based tools (JS analysis)
 RUN npm install -g js-beautify retire
 
 # jwt_tool (JWT manipulation)
-RUN git clone --depth 1 https://github.com/ticarpi/jwt_tool /opt/jwt_tool && \
+RUN rm -rf /opt/jwt_tool && rm -f /usr/local/bin/jwt_tool && \
+    git clone --depth 1 https://github.com/ticarpi/jwt_tool /opt/jwt_tool && \
     pip3 install --break-system-packages -r /opt/jwt_tool/requirements.txt && \
     ln -s /opt/jwt_tool/jwt_tool.py /usr/local/bin/jwt_tool && \
     chmod +x /opt/jwt_tool/jwt_tool.py
