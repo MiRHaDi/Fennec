@@ -27,7 +27,7 @@ class FennecConfig(BaseSettings):
 
     # LLM Configuration
     llm_provider: Literal["anthropic", "openai", "openrouter"] = "anthropic"
-    llm_model: str = "claude-sonnet-4-20250514"
+    llm_model: str = "claude-sonnet-4-6"
     openrouter_api_key: Optional[str] = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
@@ -47,7 +47,7 @@ class FennecConfig(BaseSettings):
         env_val = os.environ.get("LLM_MODEL")
         if env_val:
             return env_val
-        return v or "claude-sonnet-4-20250514"
+        return v or "claude-sonnet-4-6"
 
     @field_validator("openrouter_api_key", mode="before")
     @classmethod
