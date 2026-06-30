@@ -40,7 +40,6 @@ from rich.console import Console, Group
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.prompt import Prompt
 from rich.syntax import Syntax
 from rich.table import Table
@@ -198,7 +197,7 @@ class DashboardRenderer:
         elapsed_cell = Text()
         elapsed_cell.append("elapsed  ", style="dim")
         elapsed_cell.append(f"{mins:02d}:{secs:02d}", style="bold #ffb86c")
-        elapsed_cell.append(f"   method  ", style="dim")
+        elapsed_cell.append("   method  ", style="dim")
         elapsed_cell.append(s.method, style="bold #50fa7b")
 
         body.add_row(target_cell, agent_cell, elapsed_cell)
@@ -400,7 +399,7 @@ class DashboardRenderer:
         total_line = Text()
         total_line.append("total findings  ", style="dim")
         total_line.append(str(total), style="bold white")
-        total_line.append(f"   confirmed vulns  ", style="dim")
+        total_line.append("   confirmed vulns  ", style="dim")
         total_line.append(str(len(confirmed)),
                           style="bold red" if confirmed else "dim")
 

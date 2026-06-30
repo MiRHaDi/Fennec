@@ -8,9 +8,9 @@ that the hypothesis manager can process for routing and state updates.
 from langchain_core.tools import tool
 
 try:
-    from ..schemas import ReportResultInput, NewHypothesisInput
+    from ..schemas import ReportResultInput
 except ImportError:
-    from src.schemas import ReportResultInput, NewHypothesisInput
+    from src.schemas import ReportResultInput
 
 
 @tool(args_schema=ReportResultInput)

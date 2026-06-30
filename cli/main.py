@@ -124,7 +124,7 @@ class ReportGenerator:
             if logs:
                 content += f"- **{agent.capitalize()}:** {len(logs)} actions\n"
 
-        content += f"\n## Findings Overview\n\n"
+        content += "\n## Findings Overview\n\n"
         if self.findings:
             content += f"**Total Findings:** {len(self.findings)}\n\n"
             for finding in self.findings:

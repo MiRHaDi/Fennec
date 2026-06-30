@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fennec"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open-source, AI-driven penetration testing framework"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
@@ -18,13 +18,38 @@ dependencies = [
     "uvicorn[standard]>=0.34.0",
     "httpx>=0.28.0",
     "aiodocker>=0.23.0",
-    "duckduckgo-search>=7.0.0",
+    "ddgs>=9.0.0",
     "tavily-python>=0.5.0",
     "beautifulsoup4>=4.12.0",
     "pydantic>=2.10.0",
     "pydantic-settings>=2.7.0",
     "python-dotenv>=1.0.0",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28.0",
+]
+dev = [
+    "ruff>=0.6",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = [".venv", "frontend", "linux", ".langgraph_api"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+# E402: entrypoints (agent.py, middleware) configure sys.path before importing.
+# E722: a few intentional defensive bare excepts in CLI rendering.
+# E501: long lines are tolerated.
+ignore = ["E402", "E722", "E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

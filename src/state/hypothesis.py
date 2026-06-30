@@ -77,7 +77,7 @@ class Hypothesis:
     # === Routing ===
     # Which agent should handle this hypothesis
     required_agent: AgentRole = AgentRole.PENTESTER
-    
+
 
     # Skills to inject into the agent's prompt (e.g., ["sql_injection", "authentication_jwt"])
     skills: list[str] = field(default_factory=list)

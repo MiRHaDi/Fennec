@@ -11,16 +11,11 @@ import asyncio
 import logging
 import os
 import threading
-import time
 from typing import Any
 from datetime import datetime, timezone
 
 from langchain_core.runnables import RunnableConfig
 from langchain_core.messages import HumanMessage, SystemMessage
-try:
-    from langchain_core.callbacks import BaseCallbackHandler
-except ImportError:  # pragma: no cover - fallback for older path
-    from langchain_core.callbacks.base import BaseCallbackHandler
 
 from langchain.agents import create_agent
 from langchain.agents.structured_output import ToolStrategy
@@ -631,4 +626,3 @@ async def recon_node(
         "recon_data": recon_data.to_dict(),
         "agent_request": None,  # clear the inbound request
     }
-  

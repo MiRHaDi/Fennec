@@ -7,7 +7,6 @@ screenshot embedded in the README.
 This is a one-shot capture script — not part of the user-facing CLI.
 """
 
-import asyncio
 import sys
 import time
 from pathlib import Path
@@ -16,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from rich.console import Console
 
-from cli.interactive import DashboardState, DashboardRenderer, make_event_sink
+from cli.interactive import DashboardState, DashboardRenderer
 
 
 def build_scene() -> DashboardState:

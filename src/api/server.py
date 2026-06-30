@@ -44,7 +44,7 @@ import os
 import secrets
 import uuid
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Optional
+from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware

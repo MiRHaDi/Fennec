@@ -14,8 +14,6 @@ Supports dual output:
 import json
 import logging
 import re
-from typing import Optional
-from datetime import datetime
 
 
 # Create logger for visualizer
@@ -455,7 +453,7 @@ def print_recon_summary(recon_data: dict):
 
     _output(
         f"\n  {Colors.CYAN}📊 Recon Summary{Colors.RESET}",
-        f"\n  RECON SUMMARY:"
+        "\n  RECON SUMMARY:"
     )
     _output(f"     Endpoints: {len(endpoints)}")
     _output(f"     Technologies: {len(technologies)}")

@@ -6,7 +6,6 @@ markdown files on disk and exposes lookup helpers used by the analyst and
 pentester agents to pull the relevant playbook into a hypothesis's prompt.
 """
 
-import os
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 

@@ -35,7 +35,7 @@ except ImportError:
 
 try:
     from ..state import FennecState, ReconData, CorrelationStore
-    from ..state.hypothesis import Hypothesis, AgentRole, HypothesisStatus, HypothesisResult
+    from ..state.hypothesis import Hypothesis, AgentRole
     from ..state.correlation import Finding, FindingSeverity, FindingStatus
     from ..state.agent_result import AgentResult
     from ..orchestration import HypothesisManager
@@ -46,7 +46,7 @@ try:
     )
 except ImportError:
     from src.state import FennecState, ReconData, CorrelationStore
-    from src.state.hypothesis import Hypothesis, AgentRole, HypothesisStatus, HypothesisResult
+    from src.state.hypothesis import Hypothesis, AgentRole
     from src.state.correlation import Finding, FindingSeverity, FindingStatus
     from src.state.agent_result import AgentResult
     from src.orchestration import HypothesisManager
@@ -214,7 +214,7 @@ QUALITY HYPOTHESES lead to QUALITY FINDINGS - be specific and actionable.
 
 You have TWO jobs depending on the current state:
 
-### JOB 1: Analyze results from Reconnaissance Agent and Pentester Agent. 
+### JOB 1: Analyze results from Reconnaissance Agent and Pentester Agent.
 Analyze the findings and look for:
 1. **Attack Chains** - How can vulnerabilities be chained for maximum impact?
 2. **Patterns** - Are similar issues appearing in multiple places?

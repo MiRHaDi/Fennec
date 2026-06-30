@@ -10,11 +10,9 @@ from langchain_core.runnables import RunnableConfig
 try:
     from ..state import FennecState
     from ..cli import print_header, print_status, print_divider, VisualizerConfig
-    from ..cli.visualizer import viz_logger
 except ImportError:
     from src.state import FennecState
     from src.cli import print_header, print_status, print_divider, VisualizerConfig
-    from src.cli.visualizer import viz_logger
 
 
 def _emit_block(title: str, payload: Any) -> None:

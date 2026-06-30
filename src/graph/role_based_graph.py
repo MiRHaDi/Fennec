@@ -55,8 +55,7 @@ async def orchestrator_node(state: FennecState, config) -> dict:
     This is NOT an LLM agent - just routing logic and bookkeeping.
     """
     from ..orchestration import HypothesisManager
-    from ..state import ReconData, CorrelationStore
-    from ..state.hypothesis import AgentRole
+    from ..state import CorrelationStore
     from ..agents.analyst import _process_pending_result
 
     print_agent_header("orchestrator")
@@ -168,7 +167,7 @@ async def orchestrator_node(state: FennecState, config) -> dict:
 
     if has_hypotheses:
         stats = manager.get_statistics()
-        final_result += f"\n\n### Statistics\n"
+        final_result += "\n\n### Statistics\n"
         final_result += f"- Hypotheses tested: {stats['total']}\n"
         final_result += f"- Vulnerabilities found: {stats['vulnerabilities']}\n"
 

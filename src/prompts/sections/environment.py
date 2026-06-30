@@ -33,7 +33,7 @@ WEB FUZZING & DISCOVERY:
 JAVASCRIPT ANALYSIS:
 - retire - Vulnerable JS library detection
 - js-beautify - JS beautifier/deobfuscator
- 
+
 SPECIALIZED TOOLS:
 - jwt_tool - JWT token manipulation
 - interactsh-client - OOB interaction testing

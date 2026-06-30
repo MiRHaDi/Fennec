@@ -14,7 +14,7 @@ import aiodocker
 @dataclass
 class ContainerConfig:
     """Configuration for spawning a container."""
-    image: str = "fennec-linux" # 
+    image: str = "fennec-linux" #
     name: Optional[str] = None
     working_dir: str = "/work"
     network_mode: str = "bridge"

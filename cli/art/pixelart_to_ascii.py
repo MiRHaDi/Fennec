@@ -6,7 +6,6 @@ Specifically designed for pixel art images like the Fennec logo.
 Creates colored terminal output using ANSI escape codes.
 """
 
-import sys
 from PIL import Image
 
 
@@ -94,7 +93,7 @@ def image_to_ascii(image_path, width=70, char="█", bg_threshold=40):
 def save_as_python_module(ascii_art, output_path):
     """Save the ASCII art as a Python module."""
     # We need to escape the string properly
-    escaped = ascii_art.replace("\\", "\\\\").replace('"', '\\"')
+    ascii_art.replace("\\", "\\\\").replace('"', '\\"')
 
     content = f'''"""
 Auto-generated Fennec ASCII Art
