@@ -9,7 +9,6 @@ exactly why the schema-bound path returns None.
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 import textwrap

@@ -603,7 +603,7 @@ Examples:
         help="Use the old line-buffered output + markdown report generator"
     )
     scan_parser.add_argument(
-        "--output", "-o", default="../output",
+        "--output", "-o", default="./reports",
         help="(legacy only) Output directory for markdown reports"
     )
     scan_parser.add_argument(
