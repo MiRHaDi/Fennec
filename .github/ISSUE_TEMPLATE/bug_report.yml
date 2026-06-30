@@ -1,0 +1,51 @@
+name: 🐛 Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug! Please don't include any secrets (API keys, target
+        credentials) in the report.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `...`
+        2. Open `...`
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / output
+      render: shell
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      options:
+        - CLI
+        - Web dashboard
+        - API server
+        - Programmatic (agent.py)
+        - Docker / build
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, LLM provider/model, Docker version.
+      placeholder: "macOS 14, Python 3.11, anthropic/claude-sonnet-4-6, Docker 27"
+    validations:
+      required: true

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/Fennec-AI/Fennec/security/advisories/new
+    about: Please report security issues privately, not as public issues.
+  - name: 💬 Questions & discussion
+    url: https://github.com/Fennec-AI/Fennec/discussions
+    about: Ask questions and share ideas with the community.
+  - name: 🌐 Hosted version
+    url: https://fenneclabs.ai
+    about: Managed runner, team features, and persistent jobs.
