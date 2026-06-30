@@ -61,7 +61,7 @@ frontend/                 React + Vite dashboard (optional)
 ## Testing changes
 
 There's no test harness in this OSS distribution. To smoke-test:
-- `python -m py_compile src/**/*.py` — catches syntax errors.
+- `python -m compileall src` — catches syntax errors (recurses, unlike the non-globstar `py_compile src/**/*.py`).
 - `python -c "from src.graph.role_based_graph import compile_role_based_graph; compile_role_based_graph()"` — verifies the graph builds.
 - `python cli.py --target http://example.com --quiet` — end-to-end run (requires Docker + an API key).
 

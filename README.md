@@ -4,6 +4,14 @@
 
 # Fennec
 
+<p align="center">
+  <a href="https://github.com/Fennec-AI/Fennec/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Fennec-AI/Fennec/ci.yml?branch=main&label=CI" alt="CI status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache 2.0"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue.svg" alt="Python 3.11+">
+  <a href="https://github.com/Fennec-AI/Fennec/commits/main"><img src="https://img.shields.io/github/last-commit/Fennec-AI/Fennec" alt="Last commit"></a>
+  <a href="https://github.com/Fennec-AI/Fennec/stargazers"><img src="https://img.shields.io/github/stars/Fennec-AI/Fennec?style=social" alt="GitHub stars"></a>
+</p>
+
 **Open-source, AI-driven penetration testing. Point it at a target you control, and a fleet of agents will recon, hypothesize, exploit, and report — autonomously.**
 
 [**🌐 Hosted version: fenneclabs.ai**](https://fenneclabs.ai) — managed runner, team features, persistent jobs. Join the waitlist there if you'd rather not self-host.
@@ -40,7 +48,7 @@ There is a [hosted version at fenneclabs.ai](https://fenneclabs.ai) with team fe
 ## Quickstart (one command, after a one-time build)
 
 ```bash
-git clone git@github.com:NabilAziz99/Fennec.git
+git clone https://github.com/Fennec-AI/Fennec.git
 cd Fennec
 
 # 1. Drop your API key into .env
@@ -56,7 +64,7 @@ docker compose up --build
 
 Open **http://localhost:3000** for the dashboard. Backend API is at **http://localhost:8000** (try `/health`).
 
-> If you only want the CLI and not the dashboard, see [CLI mode](#cli-mode) below.
+> If you only want the CLI and not the dashboard, see [CLI mode](#cli--the-same-agent-in-your-terminal) below.
 
 ## CLI — the same agent, in your terminal
 
@@ -214,7 +222,7 @@ Everything is `.env`-driven. The knobs that matter:
 | Variable | What it does |
 |---|---|
 | `LLM_PROVIDER` | `anthropic` (default), `openai`, or `openrouter` |
-| `LLM_MODEL` | Model name for the provider (default `claude-sonnet-4-20250514`) |
+| `LLM_MODEL` | Model name for the provider (default `claude-sonnet-4-6`) |
 | `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `OPENROUTER_API_KEY` | One must be set, matching `LLM_PROVIDER` |
 | `DOCKER_IMAGE` | Kali image tag (default `fennec-linux`, built by `linux/Makefile`) |
 | `EXECUTION_MODE` | `docker` (default — spawn a Kali sibling per scan) or `local` (run tools in the agent container directly) |
@@ -288,11 +296,25 @@ The agent code itself is identical. Only the surrounding infrastructure differs.
 └── docker-compose.yml
 ```
 
+## Status & roadmap
+
+Fennec is **actively developed** and released under Apache-2.0. `v0.1.0` is the first public cut of the agent core that powers [fenneclabs.ai](https://fenneclabs.ai) — expect frequent iteration. See [CHANGELOG.md](CHANGELOG.md) for what's landed.
+
+On the near-term list:
+
+- Broader OWASP coverage in the analyst's hypothesis templates
+- More built-in recon/exploit tooling surfaced to the agents
+- Richer Markdown / HTML report export
+- Per-agent model routing is already wired (`RECON_LLM_MODEL` / `ANALYST_LLM_MODEL` / `PENTESTER_LLM_MODEL`) — next is smarter automatic selection
+- Tighter CI: image build + smoke tests on every PR
+
+Have a use case or a tool you want wired in? Open an issue — see [Contributing](#contributing).
+
 ## Contributing
 
-Issues and PRs welcome. Before submitting:
+Issues and PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the full dev setup. In short, before submitting:
 
-- `python -m py_compile src/**/*.py` should pass
+- `python -m compileall src` should pass (and `pip install -e .[test] && pytest`)
 - New tools belong in `src/tools/` with a Pydantic input schema
 - New agents need an entry in `AgentType`, a router branch in `src/graph/`, and a prompt in `src/prompts/`
 - Don't add proprietary services, telemetry, or auth gates — OSS stays vendor-neutral
