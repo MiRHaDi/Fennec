@@ -30,6 +30,16 @@ frontend/node_modules
 frontend/dist
 frontend/.vite
 
+# Dirs the backend image doesn't need
+frontend/
+docs/
+cli/art/
+tests/
+fixtures/
+linux/
+seed_data/
+*.md
+
 # Misc
 *.log
 *.tmp

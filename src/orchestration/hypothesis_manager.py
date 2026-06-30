@@ -199,6 +199,9 @@ class HypothesisManager:
             self.outputs_registry[output] = hypothesis.id
             self.pending_outputs.pop(output, None)
 
+        # Record what this hypothesis actually produced for the dashboard Data I/O.
+        hypothesis.actual_outputs = list(outputs)
+
         logger.info(
             f"Hypothesis {hypothesis.id} completed: {result.result}"
             f" (outputs: {outputs})"

@@ -14,9 +14,6 @@ httpx>=0.28.0
 aiodocker>=0.23.0
 
 # Search
-# Note: duckduckgo-search was renamed/forked to `ddgs` (the code imports `from ddgs import DDGS`).
-# Keep duckduckgo-search for any legacy imports and add ddgs as the real runtime dep.
-duckduckgo-search>=7.0.0
 ddgs>=9.0.0
 tavily-python>=0.5.0
 

@@ -572,13 +572,20 @@ async def recon_node(
 
     try:
         result = await agent.ainvoke(
-            {"messages": []},
+            {"messages": [("user", (
+                f"Begin reconnaissance of the target: "
+                f"{state.get('target_url') or recon_data.target_url or 'the target'}. "
+                "Use your available tools to map the attack surface (technologies, endpoints, "
+                "entry points, authentication surface), then return the structured ReconResult."
+            ))]},
             config=run_config,
         )
     except Exception as exc:
         # ModelCallLimitMiddleware with exit_behavior="end" can crash on
         # OpenRouter/OpenAI providers that reject assistant-message prefill.
         # Recover gracefully — we still have messages from prior tool calls.
+        if any(m in str(exc).lower() for m in ("could not resolve authentication", "authentication_error", "invalid x-api-key", "x-api-key", "unauthorized", "permission_error")):
+            raise  # auth/config error — fail the run loudly, don't silently "complete"
         logger.warning("Recon agent invocation error (likely model-call limit): %s", exc)
         result = {"messages": [], "structured_response": None}
 

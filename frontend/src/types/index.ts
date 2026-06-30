@@ -85,7 +85,7 @@ export interface HypothesisResult {
     owasp_category?: string;
     findings?: string[];
     steps?: StepRecord[];
-    tasks?: { tasks: Record<string, Task>; _counter: number };
+    tasks?: Array<{ content: string; status: string }>;
     blocked_by?: string | null;
     waiting_for?: string | null;
     expected_outputs?: string[];

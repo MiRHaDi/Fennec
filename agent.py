@@ -118,6 +118,9 @@ class AgentResult:
     duration_seconds: float = 0.0
     token_usage: dict = field(default_factory=dict)
     final_summary: str = ""
+    # Rich, dashboard-ready finding records for confirmed-vulnerable hypotheses
+    # (description / impact / evidence / remediation / severity / tasks).
+    rich_findings: list[dict] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization."""
@@ -130,6 +133,7 @@ class AgentResult:
             "duration_seconds": self.duration_seconds,
             "token_usage": self.token_usage,
             "final_summary": self.final_summary,
+            "rich_findings": self.rich_findings,
         }
 
 
@@ -494,7 +498,13 @@ async def run_pentest(
                             if node_output.get("recon_data") is not None:
                                 await _emit("recon_update", {"recon_data": node_output["recon_data"]})
                             if node_output.get("hypothesis_manager") is not None:
-                                await _emit("hypothesis_tree", {"hypothesis_manager": node_output["hypothesis_manager"]})
+                                _hm = node_output["hypothesis_manager"]
+                                await _emit("hypothesis_tree", {
+                                    "hypothesis_manager": _hm,
+                                    # Surface the working hypothesis at the top level of
+                                    # the payload too — the dashboard reads it there.
+                                    "current_hypothesis_id": (_hm or {}).get("current_hypothesis_id"),
+                                })
                             if node_output.get("current_hypothesis_id"):
                                 await _emit("current_hypothesis", {"hypothesis_id": node_output["current_hypothesis_id"]})
                             if node_output.get("correlation_store") is not None:
@@ -674,13 +684,26 @@ async def run_pentest(
     if _latest_hypothesis_manager:
         tree = _latest_hypothesis_manager.get("tree") or {}
         vuln_titles: list[str] = []
+        rich_findings: list[dict] = []
         for hid, hyp in tree.items():
             if not isinstance(hyp, dict):
                 continue
             if (hyp.get("result") or "").lower() == "vulnerable":
                 title = hyp.get("title") or f"Finding {hid}"
                 vuln_titles.append(title)
+                # Carry the structured finding detail (and the agent's task list)
+                # the pentester attached to this hypothesis through to the API.
+                detail = hyp.get("finding") or {}
+                entry = {
+                    "title": title,
+                    "hypothesis_id": hid,
+                    "tasks": hyp.get("tasks") or [],
+                    **detail,
+                }
+                entry.setdefault("severity", hyp.get("severity") or "info")
+                rich_findings.append(entry)
         result.vulnerabilities = vuln_titles
+        result.rich_findings = rich_findings
         if vuln_titles:
             result.success = True
 

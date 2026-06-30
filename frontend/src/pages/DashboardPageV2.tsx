@@ -15,9 +15,9 @@ const TIME_RANGES = [
 ];
 
 export default function DashboardPage() {
-    const { data, isLoading, error, refetch } = useDashboardData();
-    const [isRefreshing, setIsRefreshing] = useState(false);
     const [activeRange, setActiveRange] = useState(2); // default 30d
+    const { data, isLoading, error, refetch } = useDashboardData(TIME_RANGES[activeRange].days);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [targets, setTargets] = useState<Target[]>([]);
     const navigate = useNavigate();
 

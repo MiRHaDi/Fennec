@@ -49,6 +49,7 @@ const defaultDistribution: SeverityDistribution = {
 };
 
 export function useDashboardData(
+  days: number = 30,
   refreshInterval: number = 30000
 ): UseDashboardDataReturn {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -60,7 +61,7 @@ export function useDashboardData(
       // Fetch all dashboard data in parallel
       const [stats, trends, distribution, tests] = await Promise.all([
         dashboardApi.getStats().catch(() => defaultStats),
-        dashboardApi.getTrends(30).catch(() => []),
+        dashboardApi.getTrends(days).catch(() => []),
         dashboardApi.getSeverityDistribution().catch(() => defaultDistribution),
         dashboardApi.getTests(10).catch(() => []),
       ]);
@@ -78,7 +79,7 @@ export function useDashboardData(
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [days]);
 
   // Initial fetch
   useEffect(() => {

@@ -12,6 +12,11 @@ services:
       # LLM Configuration
       - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
       - LLM_MODEL=${LLM_MODEL:-claude-sonnet-4-20250514}
+      # Robustness: the OSS default (60s / 2 retries) is too low for the rich
+      # analyst/pentester structured-output calls — they time out and get
+      # silently dropped, producing 0 hypotheses. Production uses 180/4.
+      - FENNEC_LLM_TIMEOUT=${FENNEC_LLM_TIMEOUT:-600}
+      - FENNEC_LLM_MAX_RETRIES=${FENNEC_LLM_MAX_RETRIES:-5}
       # API Keys
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -25,6 +30,15 @@ services:
       # synthetic data on startup (useful for previewing the UI without
       # running a real scan).
       - FENNEC_DEMO_SEED=${FENNEC_DEMO_SEED:-}
+      # LangChain / LangSmith tracing (pass-through from host .env)
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-fennec-ai}
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT:-https://api.smith.langchain.com}
+      - LANGSMITH_TRACING=${LANGSMITH_TRACING:-}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY:-}
+      - LANGSMITH_PROJECT=${LANGSMITH_PROJECT:-fennec-ai}
+      - LANGSMITH_ENDPOINT=${LANGSMITH_ENDPOINT:-https://api.smith.langchain.com}
     volumes:
       # Mount Docker socket for spawning pentest containers
       - /var/run/docker.sock:/var/run/docker.sock

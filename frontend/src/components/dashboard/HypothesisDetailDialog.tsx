@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import type { HypothesisResult, Task, StepRecord } from '@/types';
+import type { HypothesisResult } from '@/types';
 import {
   FlaskConical,
   Target,
@@ -29,8 +29,6 @@ import {
 
 interface HypothesisDetailDialogProps {
   hypothesis: HypothesisResult | null;
-  tasks: Task[];
-  steps: StepRecord[];
   isOpen: boolean;
   onClose: () => void;
   isActive: boolean;
@@ -38,8 +36,6 @@ interface HypothesisDetailDialogProps {
 
 export function HypothesisDetailDialog({
                                          hypothesis,
-                                         tasks,
-                                         steps,
                                          isOpen,
                                          onClose,
                                          isActive,
@@ -82,6 +78,21 @@ export function HypothesisDetailDialog({
     info: 'bg-fennec-dark-600 text-fennec-dark-300 border-fennec-dark-600/30',
   };
 
+  const taskStatusConfig: Record<string, { color: string; label: string }> = {
+    pending: {
+      color: 'text-fennec-dark-400 bg-fennec-dark-700/30 border-fennec-dark-600',
+      label: 'PENDING',
+    },
+    in_progress: {
+      color: 'text-fennec-purple-400 bg-fennec-purple-600/20 border-fennec-purple-500/30',
+      label: 'IN PROGRESS',
+    },
+    completed: {
+      color: 'text-fennec-green-400 bg-fennec-green-600/20 border-fennec-green-500/30',
+      label: 'COMPLETED',
+    },
+  };
+
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'Not started';
     const date = new Date(dateStr);
@@ -95,6 +106,7 @@ export function HypothesisDetailDialog({
   };
 
   const currentStatus = statusConfig[hypothesis.status];
+  const hypothesisTasks = hypothesis.tasks ?? [];
 
   return (
       <Dialog open={isOpen} onOpenChange={onClose}>
@@ -136,13 +148,10 @@ export function HypothesisDetailDialog({
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5 bg-fennec-dark-800/50">
+            <TabsList className="grid w-full grid-cols-4 bg-fennec-dark-800/50">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="tasks">
-                Tasks {tasks.length > 0 && <span className="ml-1 text-xs">({tasks.length})</span>}
-              </TabsTrigger>
-              <TabsTrigger value="actions">
-                Actions {steps.length > 0 && <span className="ml-1 text-xs">({steps.length})</span>}
+                Tasks {hypothesisTasks.length > 0 && <span className="ml-1 text-xs">({hypothesisTasks.length})</span>}
               </TabsTrigger>
               <TabsTrigger value="findings">
                 Findings {hypothesis.findings && <span className="ml-1 text-xs">({hypothesis.findings.length})</span>}
@@ -235,103 +244,49 @@ export function HypothesisDetailDialog({
 
             {/* Tasks Tab */}
             <TabsContent value="tasks" className="space-y-3 mt-6">
-              {tasks.length === 0 ? (
+              {hypothesisTasks.length === 0 ? (
                   <div className="text-center py-12 text-fennec-dark-500">
                     <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>No tasks assigned yet</p>
                   </div>
               ) : (
                   <div className="space-y-3">
-                    {tasks.map((task) => (
-                        <div
-                            key={task.id}
-                            className="p-4 rounded-lg bg-fennec-dark-800/30 border border-fennec-dark-700 hover:bg-fennec-dark-800/50 transition-colors"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="mt-1">
-                              {task.status === 'completed' && (
-                                  <CheckCircle2 className="h-5 w-5 text-fennec-green-400" />
-                              )}
-                              {task.status === 'in_progress' && (
-                                  <Loader2 className="h-5 w-5 text-fennec-purple-400 animate-spin" />
-                              )}
-                              {task.status === 'pending' && (
-                                  <div className="h-5 w-5 rounded-full border-2 border-fennec-dark-600" />
-                              )}
-                            </div>
-                            <div className="flex-1 space-y-2">
-                              <div className={cn(
-                                  "font-medium text-base",
-                                  task.status === 'completed' && 'text-fennec-dark-400 line-through',
-                                  task.status === 'in_progress' && 'text-white',
-                                  task.status === 'pending' && 'text-fennec-dark-300'
-                              )}>
-                                {task.status === 'in_progress' && task.activeForm
-                                    ? task.activeForm
-                                    : task.subject}
+                    {hypothesisTasks.map((task, idx) => {
+                      const taskStatus = taskStatusConfig[task.status] ?? taskStatusConfig['pending'];
+                      return (
+                          <div
+                              key={idx}
+                              className="p-4 rounded-lg bg-fennec-dark-800/30 border border-fennec-dark-700 hover:bg-fennec-dark-800/50 transition-colors"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="mt-1">
+                                {task.status === 'completed' && (
+                                    <CheckCircle2 className="h-5 w-5 text-fennec-green-400" />
+                                )}
+                                {task.status === 'in_progress' && (
+                                    <Loader2 className="h-5 w-5 text-fennec-purple-400 animate-spin" />
+                                )}
+                                {task.status === 'pending' && (
+                                    <div className="h-5 w-5 rounded-full border-2 border-fennec-dark-600" />
+                                )}
                               </div>
-                              {task.description && (
-                                  <div className="text-sm text-fennec-dark-400 leading-relaxed">
-                                    {task.description}
-                                  </div>
-                              )}
-                              {task.owner && (
-                                  <div className="flex items-center gap-2 text-xs text-fennec-dark-500">
-                                    <Target className="h-3 w-3" />
-                                    {task.owner}
-                                  </div>
-                              )}
+                              <div className="flex-1 flex items-start justify-between gap-3">
+                                <div className={cn(
+                                    "font-medium text-base",
+                                    task.status === 'completed' && 'text-fennec-dark-400 line-through',
+                                    task.status === 'in_progress' && 'text-white',
+                                    task.status === 'pending' && 'text-fennec-dark-300'
+                                )}>
+                                  {task.content}
+                                </div>
+                                <Badge className={cn("border px-2 py-0.5 text-xs shrink-0", taskStatus.color)}>
+                                  {taskStatus.label}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                    ))}
-                  </div>
-              )}
-            </TabsContent>
-
-            {/* Actions Tab */}
-            <TabsContent value="actions" className="space-y-3 mt-6">
-              {steps.length === 0 ? (
-                  <div className="text-center py-12 text-fennec-dark-500">
-                    <Database className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>No actions recorded yet</p>
-                  </div>
-              ) : (
-                  <div className="space-y-3">
-                    {steps.map((step, idx) => (
-                        <div
-                            key={idx}
-                            className="p-4 rounded-lg bg-fennec-dark-800/30 border border-fennec-dark-700"
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className={cn(
-                                'w-3 h-3 rounded-full mt-1.5 flex-shrink-0',
-                                step.success ? 'bg-fennec-green-400' : 'bg-fennec-red-400'
-                            )} />
-                            <div className="flex-1 space-y-2">
-                              <div className="font-medium text-white text-base">{step.action}</div>
-                              <div className="text-sm text-fennec-dark-400">
-                                Agent: <span className="text-fennec-purple-400 font-medium">{step.agent}</span>
-                              </div>
-                              {step.input_summary && (
-                                  <div className="text-sm text-fennec-dark-400">
-                                    <span className="text-fennec-dark-500">Input:</span> {step.input_summary}
-                                  </div>
-                              )}
-                              {step.output_summary && (
-                                  <div className="text-sm text-fennec-dark-400">
-                                    <span className="text-fennec-dark-500">Output:</span> {step.output_summary}
-                                  </div>
-                              )}
-                              {step.timestamp && (
-                                  <div className="text-xs text-fennec-dark-600">
-                                    {new Date(step.timestamp).toLocaleString()}
-                                  </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                    ))}
+                      );
+                    })}
                   </div>
               )}
             </TabsContent>

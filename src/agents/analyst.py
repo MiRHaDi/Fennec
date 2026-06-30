@@ -306,6 +306,14 @@ def _process_pending_result(
     manager.current_hypothesis_id = current_hypothesis_id
     manager.handle_result(agent_result)
 
+    # Persist the rich finding detail + the agent's task list onto the
+    # hypothesis so they reach the dashboard (run_pentest reads them off the
+    # hypothesis tree at end of run).
+    if pending_result.get("finding_detail") is not None:
+        hyp.finding = pending_result["finding_detail"]
+    if pending_result.get("tasks"):
+        hyp.tasks = pending_result["tasks"]
+
     # Add findings to correlation store (manager doesn't handle this)
     for finding_text in pending_result.get("findings", []):
         severity_value = pending_result.get("severity") or "info"
@@ -462,10 +470,15 @@ async def analyst_node(
     # ---- invoke (fresh messages) ----
     try:
         result = await agent.ainvoke(
-            {"messages": []},
+            {"messages": [("user", (
+                "Analyze the reconnaissance findings and produce the prioritized hypothesis "
+                "queue, then return the structured AnalystResult."
+            ))]},
             config=config,
         )
     except Exception as exc:
+        if any(m in str(exc).lower() for m in ("could not resolve authentication", "authentication_error", "invalid x-api-key", "x-api-key", "unauthorized", "permission_error")):
+            raise  # auth/config error — fail the run loudly, don't silently "complete"
         logger.warning("Analyst agent invocation error (likely model-call limit): %s", exc)
         result = {"messages": [], "structured_response": None}
 

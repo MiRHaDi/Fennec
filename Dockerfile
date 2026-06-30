@@ -4,8 +4,7 @@
 # tools (nmap, sqlmap, gobuster, nuclei, etc.) live in the sibling Kali
 # container that this process spawns via the mounted Docker socket
 # (EXECUTION_MODE=docker, default). The backend container itself stays
-# slim: a Python runtime + a curl/git for healthcheck and any pip
-# packages that need git to install.
+# slim: a Python runtime + curl for healthcheck and ca-certificates for TLS.
 #
 # If you want a self-contained image where tools run inside this same
 # container (EXECUTION_MODE=local), see linux/Dockerfile for the full
@@ -15,12 +14,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Minimal runtime: curl for the healthcheck, git for any pip packages
-# that pull from VCS, ca-certificates for TLS.
+# Minimal runtime: curl for the healthcheck, ca-certificates for TLS.
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
         curl \
-        git \
         ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 

@@ -13,7 +13,7 @@ RUN npm install
 COPY . .
 
 # Bake the API base URL into the bundle at build time
-ARG VITE_API_BASE_URL=https://fennec-api-429281326783.us-west1.run.app
+ARG VITE_API_BASE_URL=http://localhost:8000
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the application

@@ -192,8 +192,53 @@ export default function FindingsPage() {
 
         if (cancelled) return;
 
-        // Prefer rich findings if available, fall back to mapped basic findings
-        const finalFindings = richResults.length > 0 ? richResults : mapped;
+        // The dashboard `mapped` findings carry the severity (in `verdict`) and a
+        // human title — that's what the list filter, severity sort, and badges
+        // below all rely on. The per-job pentester_results carry structured
+        // detail (impact / evidence / remediation) but put a *status*
+        // ("vulnerable") in `verdict`, which is NOT a severity. Using them as the
+        // display list makes every finding fail the severity filter and vanish.
+        // So keep the basic findings as the display base and overlay only the
+        // richer detail fields from pentester_results when present (matched by
+        // job_id, in order) — never downgrading severity, title, or summary.
+        const richByJob = new Map<string, DisplayFinding[]>();
+        for (const rf of richResults) {
+          const jid = (rf as unknown as Record<string, string>).job_id ?? '';
+          const arr = richByJob.get(jid) ?? [];
+          arr.push(rf);
+          richByJob.set(jid, arr);
+        }
+        const richSeen = new Map<string, number>();
+        const finalFindings: DisplayFinding[] = mapped.map((m) => {
+          const jid = m.job_id ?? '';
+          const i = richSeen.get(jid) ?? 0;
+          richSeen.set(jid, i + 1);
+          const rich = richByJob.get(jid)?.[i];
+          if (!rich) return m;
+          return {
+            ...m, // keep severity (verdict), title, location, full summary
+            description_technical:
+              m.description_technical ?? rich.description_technical ?? null,
+            impact_demonstrated:
+              rich.impact_demonstrated ?? m.impact_demonstrated ?? null,
+            impact_attack_scenarios:
+              rich.impact_attack_scenarios ?? m.impact_attack_scenarios ?? null,
+            impact_business_risk:
+              rich.impact_business_risk ?? m.impact_business_risk ?? null,
+            evidence_logged: rich.evidence_logged ?? m.evidence_logged ?? null,
+            evidence_payloads: rich.evidence_payloads ?? m.evidence_payloads ?? null,
+            evidence_observed: rich.evidence_observed ?? m.evidence_observed ?? null,
+            remediation_primary:
+              rich.remediation_primary ?? m.remediation_primary ?? null,
+            remediation_implementation:
+              rich.remediation_implementation ?? m.remediation_implementation ?? null,
+            remediation_hardening:
+              rich.remediation_hardening ?? m.remediation_hardening ?? null,
+            owasp_category: rich.owasp_category ?? m.owasp_category ?? null,
+            evidence:
+              rich.evidence && rich.evidence.length ? rich.evidence : m.evidence,
+          };
+        });
         setFindings(finalFindings);
 
         // If the caller deep-linked with ?finding_id=<id>, prefer that.
@@ -232,6 +277,16 @@ export default function FindingsPage() {
   const filteredFindings = useMemo(() => {
     let list = findings.filter((f) => VALID_VERDICTS.has(f.verdict ?? ''));
 
+    // status tab filter (Open / Resolved / Archived)
+    list = list.filter((f) => {
+      const st = (f.status ?? '').toLowerCase();
+      const closed =
+        st === 'resolved' || st === 'fixed' || st === 'archived' || st === 'dismissed';
+      if (filterTab === 'resolved') return st === 'resolved' || st === 'fixed';
+      if (filterTab === 'archived') return st === 'archived' || st === 'dismissed';
+      return !closed; // 'open'
+    });
+
     // target_id filter
     if (targetId) {
       list = list.filter(
@@ -258,7 +313,7 @@ export default function FindingsPage() {
     list.sort((a, b) => severityOrder(a.verdict) - severityOrder(b.verdict));
 
     return list;
-  }, [findings, searchQuery, targetId]);
+  }, [findings, searchQuery, targetId, filterTab]);
 
   const selected = useMemo(
     () => filteredFindings.find((f) => f.id === selectedId) ?? null,

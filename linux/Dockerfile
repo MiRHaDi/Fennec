@@ -8,6 +8,7 @@ RUN apt-get update && \
     wget \
     git \
     jq \
+    unzip \
     libcap2-bin \
     ca-certificates \
     build-essential \
@@ -30,7 +31,6 @@ RUN apt-get update && \
     john \
     hashcat \
     # Exploitation
-    metasploit-framework \
     exploitdb \
     commix \
     # CMS scanning
@@ -46,6 +46,9 @@ RUN apt-get update && \
     # Node.js will be installed via NodeSource below
     gnupg2 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Ensure python (unversioned) resolves to python3
+RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 
 # Ensure a minimal common wordlist exists even if seclists paths are missing
 COPY wordlists/common.txt /usr/share/seclists/Discovery/Web-Content/common.txt

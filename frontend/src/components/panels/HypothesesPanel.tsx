@@ -286,8 +286,6 @@ export function HypothesesPanel({
       {/* Detail Dialog */}
       <HypothesisDetailDialog
         hypothesis={selectedHypothesisData}
-        tasks={selectedHypothesisData ? (tasksByHypothesis[selectedHypothesisData.id] || []) : []}
-        steps={selectedHypothesisData ? (stepsByHypothesis[selectedHypothesisData.id] || []) : []}
         isOpen={selectedHypothesis !== null}
         onClose={() => setSelectedHypothesis(null)}
         isActive={selectedHypothesis === currentHypothesisId}

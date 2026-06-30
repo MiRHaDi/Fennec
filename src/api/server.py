@@ -167,6 +167,27 @@ async def _run_job(job: Job) -> None:
         "method": job.method,
     })
 
+    # Preflight: a missing LLM API key is the #1 cause of an instant, empty
+    # "completed" run. Fail loudly up front instead of silently finishing.
+    try:
+        from src.config.settings import get_config
+        _cfg = get_config()
+        _key = {
+            "anthropic": _cfg.anthropic_api_key,
+            "openai": _cfg.openai_api_key,
+            "openrouter": _cfg.openrouter_api_key,
+        }.get(_cfg.llm_provider)
+        if not _key:
+            job.error = (
+                f"No LLM API key configured for provider '{_cfg.llm_provider}'. "
+                "Set the matching API key in your .env / environment."
+            )
+            job.mark("failed")
+            await publish(job, "error", {"message": job.error})
+            return
+    except Exception:
+        logger.exception("API key preflight check failed")
+
     # Set per-job assessment method via env (read inside run_pentest).
     # Single-process server — this is the safe place to set it.
     if job.method:
@@ -268,43 +289,64 @@ async def _run_job(job: Job) -> None:
     # Populate the job with whatever the agent produced.
     job.success = result.success
     job.final_result = result.final_summary
+    # Build dashboard findings + the rich pentester_results view from the
+    # structured finding detail the pentester attached to each vulnerable
+    # hypothesis (carried via result.rich_findings). Falls back to title-only
+    # records for older/partial runs that produced no structured detail.
+    _now = datetime.now(timezone.utc).isoformat()
+    rich = result.rich_findings or [
+        {"title": v, "hypothesis_id": None, "severity": "high"}
+        for v in result.vulnerabilities
+    ]
     job.findings = [
         {
             "id": f"{job.id}-finding-{i}",
             "job_id": job.id,
-            "title": vuln,
-            "description": result.final_summary,
-            "severity": "high",  # Pentester confirms vulnerable; severity-aware mapping is a future enhancement
+            "title": f.get("title") or f"Finding {i}",
+            "description": f.get("description_overview") or result.final_summary,
+            "severity": (f.get("severity") or "info"),
             "status": "confirmed",
-            "location": job.target_url,
+            "location": (f.get("description_breakdown") or {}).get("affected_endpoint") or job.target_url,
             "parameter": "",
-            "evidence": "",
-            "reproduction_steps": [],
-            "vulnerability_type": "",
+            "evidence": "\n".join(f.get("evidence") or []),
+            "reproduction_steps": f.get("evidence_payloads") or [],
+            "vulnerability_type": (f.get("description_breakdown") or {}).get("vuln_type") or "",
             "cwe_id": None,
-            "hypothesis_id": None,
-            "discovered_at": datetime.now(timezone.utc).isoformat(),
+            "hypothesis_id": f.get("hypothesis_id"),
+            "discovered_at": _now,
             "discovered_by": "pentester",
         }
-        for i, vuln in enumerate(result.vulnerabilities)
+        for i, f in enumerate(rich)
     ]
-    # Build a pentester_results view (RichFinding shape) from execution_log.
+    # Rich per-finding detail (RichFinding shape) for the Findings detail panel.
     job.pentester_results = [
         {
             "id": i,
             "job_id": job.id,
-            "hypothesis_id": None,
+            "hypothesis_id": f.get("hypothesis_id"),
             "status": "completed",
-            "verdict": "vulnerable",
-            "evidence": [],
+            "verdict": (f.get("severity") or "vulnerable"),
+            "evidence": f.get("evidence") or [],
             "suggested_followups": [],
             "needs": [],
             "error": None,
-            "description_overview": vuln,
-            "owasp_category": None,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "description_overview": f.get("description_overview") or f.get("title"),
+            "description_breakdown": f.get("description_breakdown"),
+            "description_technical": f.get("description_technical"),
+            "impact_demonstrated": f.get("impact_demonstrated"),
+            "impact_attack_scenarios": f.get("impact_attack_scenarios"),
+            "impact_business_risk": f.get("impact_business_risk"),
+            "evidence_logged": f.get("evidence_logged"),
+            "evidence_payloads": f.get("evidence_payloads"),
+            "evidence_observed": f.get("evidence_observed"),
+            "remediation_primary": f.get("remediation_primary"),
+            "remediation_implementation": f.get("remediation_implementation"),
+            "remediation_hardening": f.get("remediation_hardening"),
+            "owasp_category": f.get("owasp_category"),
+            "tasks": f.get("tasks") or [],
+            "created_at": _now,
         }
-        for i, vuln in enumerate(result.vulnerabilities)
+        for i, f in enumerate(rich)
     ]
     # Tool calls from execution log
     job.tool_calls = [

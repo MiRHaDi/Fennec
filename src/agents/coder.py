@@ -159,10 +159,15 @@ async def run_coder(
     # ---- invoke (fresh messages) ----
     try:
         result = await agent.ainvoke(
-            {"messages": []},
+            {"messages": [("user", (
+                "Develop and execute the code or payload required for the current task, then "
+                "return the structured CoderResult."
+            ))]},
             config=config or {},
         )
     except Exception as exc:
+        if any(m in str(exc).lower() for m in ("could not resolve authentication", "authentication_error", "invalid x-api-key", "x-api-key", "unauthorized", "permission_error")):
+            raise  # auth/config error — fail the run loudly, don't silently "complete"
         logger.warning("Coder agent invocation error (likely model-call limit): %s", exc)
         result = {"messages": [], "structured_response": None}
 

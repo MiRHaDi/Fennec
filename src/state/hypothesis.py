@@ -104,6 +104,16 @@ class Hypothesis:
     # What this hypothesis might produce (declared upfront for dependency resolution)
     expected_outputs: list[str] = field(default_factory=list)
 
+    # Artifacts this hypothesis actually produced (populated when completed) —
+    # drives the "Produced Outputs" half of the dashboard's Data I/O section.
+    actual_outputs: list[str] = field(default_factory=list)
+
+    # === Findings / Tasks (populated by the pentester) ===
+    # Rich finding detail (dashboard-ready) for a confirmed-vulnerable hypothesis.
+    finding: Optional[dict] = None
+    # Tasks the agent worked through for this hypothesis (from its todo list).
+    tasks: list[dict] = field(default_factory=list)
+
     # === Timestamps ===
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     started_at: Optional[datetime] = None
@@ -156,6 +166,9 @@ class Hypothesis:
             "blocked_by": self.blocked_by,
             "waiting_for": self.waiting_for,
             "expected_outputs": self.expected_outputs,
+            "actual_outputs": self.actual_outputs,
+            "finding": self.finding,
+            "tasks": self.tasks,
             "created_at": self.created_at.isoformat(),
             "started_at": self.started_at.isoformat() if self.started_at else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
@@ -181,6 +194,9 @@ class Hypothesis:
             blocked_by=data.get("blocked_by"),
             waiting_for=data.get("waiting_for"),
             expected_outputs=data.get("expected_outputs", []),
+            actual_outputs=data.get("actual_outputs", []),
+            finding=data.get("finding"),
+            tasks=data.get("tasks", []),
             created_at=datetime.fromisoformat(data["created_at"]) if data.get("created_at") else datetime.now(timezone.utc),
             started_at=datetime.fromisoformat(data["started_at"]) if data.get("started_at") else None,
             completed_at=datetime.fromisoformat(data["completed_at"]) if data.get("completed_at") else None,

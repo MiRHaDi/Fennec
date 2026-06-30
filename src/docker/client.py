@@ -185,23 +185,51 @@ class DockerClient:
         container = self._client.containers.container(container_id)
 
         try:
-            tar_stream = await container.get_archive(path)
+            result = await container.get_archive(path)
 
-            # Read tar data
-            tar_data = b""
-            async for chunk in tar_stream:
-                tar_data += chunk
+            # Case 1: aiodocker already returned a tarfile.TarFile object
+            # (newer/some builds read the whole archive into memory and return it directly)
+            if hasattr(result, "getmembers"):
+                tar = result
+                try:
+                    for member in tar.getmembers():
+                        if member.isfile():
+                            f = tar.extractfile(member)
+                            if f:
+                                return f.read().decode("utf-8", errors="replace")
+                finally:
+                    tar.close()
+                return ""
 
-            # Extract file content
-            tar_buffer = io.BytesIO(tar_data)
-            with tarfile.open(fileobj=tar_buffer, mode="r") as tar:
-                for member in tar.getmembers():
-                    if member.isfile():
-                        f = tar.extractfile(member)
-                        if f:
-                            return f.read().decode("utf-8", errors="replace")
+            # Case 2: async iterator / stream of bytes chunks
+            if hasattr(result, "__aiter__"):
+                tar_data = b""
+                async for chunk in result:
+                    tar_data += chunk
+                tar_buffer = io.BytesIO(tar_data)
+                with tarfile.open(fileobj=tar_buffer, mode="r") as tar:
+                    for member in tar.getmembers():
+                        if member.isfile():
+                            f = tar.extractfile(member)
+                            if f:
+                                return f.read().decode("utf-8", errors="replace")
+                return ""
 
-            return ""
+            # Case 3: raw bytes already in memory
+            if isinstance(result, (bytes, bytearray)):
+                tar_buffer = io.BytesIO(result)
+                with tarfile.open(fileobj=tar_buffer, mode="r") as tar:
+                    for member in tar.getmembers():
+                        if member.isfile():
+                            f = tar.extractfile(member)
+                            if f:
+                                return f.read().decode("utf-8", errors="replace")
+                return ""
+
+            raise RuntimeError(
+                f"Unexpected return type from get_archive: {type(result)!r}"
+            )
+
         except Exception as e:
             raise RuntimeError(f"Failed to read file: {e}")
 

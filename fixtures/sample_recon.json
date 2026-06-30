@@ -1,14 +1,14 @@
 {
-  "target_url": "https://fennec-tester-429281326783.us-west1.run.app/",
+  "target_url": "https://tester.example.com/",
   "ip_address": "127.0.0.1",
   "ports_open": [443],
   "canonical_access": {
     "scheme": "https",
-    "host": "fennec-tester-429281326783.us-west1.run.app",
+    "host": "tester.example.com",
     "port": 443,
     "base_path": "/",
     "host_header": null,
-    "justification": "Direct HTTPS access on Cloud Run",
+    "justification": "Direct HTTPS access",
     "evidence_ref": null
   },
   "technologies": [

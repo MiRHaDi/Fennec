@@ -65,14 +65,19 @@ export function TestDialog({ open, onOpenChange }: TestDialogProps) {
     // the status page when they navigate elsewhere with an active session.
     useEffect(() => {
         if (!open) return;
-        if (sessionId && connectionStatus === 'connected' && testStatus === 'running') {
+        // As soon as the backend returns a job id (sessionId), the assessment
+        // HAS started — close the dialog and jump to the live status page.
+        // Previously this was gated on testStatus === 'running', which the OSS
+        // event stream may never surface, leaving the button stuck on
+        // "Starting...". Navigating on sessionId (absent an error) is reliable.
+        if (sessionId && !streamError && connectionStatus !== 'error') {
             const timer = setTimeout(() => {
                 onOpenChange(false);
                 navigate(`/dashboard/status/${sessionId}`);
-            }, 500);
+            }, 600);
             return () => clearTimeout(timer);
         }
-    }, [open, sessionId, connectionStatus, testStatus, navigate, onOpenChange]);
+    }, [open, sessionId, streamError, connectionStatus, navigate, onOpenChange]);
 
     // Reset state when dialog opens
     useEffect(() => {
