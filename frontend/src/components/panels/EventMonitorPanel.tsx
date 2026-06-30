@@ -60,7 +60,6 @@ export function EventMonitorPanel({ lastEvent, maxEvents = 100 }: EventMonitorPa
     lastProcessedKey.current = key;
 
     addEvent(lastEvent.eventType, lastEvent.payload, lastEvent.sessionId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastEvent]);
 
   const toggleExpand = (id: number) => {

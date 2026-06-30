@@ -118,22 +118,24 @@ export function HypothesesPanel({
     switch (sortBy) {
       case 'priority':
         return sorted.sort((a, b) => Number(b.priority) - Number(a.priority));
-      case 'status':
+      case 'status': {
         const statusOrder = ['in_progress', 'pending', 'blocked', 'completed', 'dead_end'];
         return sorted.sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
+      }
       case 'recent':
         return sorted.sort((a, b) => {
           const dateA = new Date(a.created_at).getTime();
           const dateB = new Date(b.created_at).getTime();
           return dateB - dateA;
         });
-      case 'severity':
+      case 'severity': {
         const severityOrder = { critical: 0, high: 1, medium: 2, low: 3, info: 4, null: 5 };
         return sorted.sort((a, b) => {
           const severityA = severityOrder[a.severity || 'null'] ?? 5;
           const severityB = severityOrder[b.severity || 'null'] ?? 5;
           return severityA - severityB;
         });
+      }
       default:
         return sorted;
     }

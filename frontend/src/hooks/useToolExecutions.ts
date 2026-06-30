@@ -119,7 +119,7 @@ export function useToolExecutions(
     if (fetchOnMount && sessionId) {
       fetchData(false);
     }
-  }, [fetchOnMount, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchOnMount, sessionId]);
 
   // Polling (only refetches first page)
   useEffect(() => {
@@ -135,7 +135,7 @@ export function useToolExecutions(
         pollIntervalRef.current = null;
       }
     };
-  }, [poll, sessionId, pollInterval]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [poll, sessionId, pollInterval]);
 
   return {
     data,
